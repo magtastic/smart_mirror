@@ -1,38 +1,49 @@
-from pyicloud import PyiCloudService
-import sys
 import json
+import os
+import requests
+from requests_cloudkit import CloudKitAuth
+
 
 def getiCloudConfig():
     with open('config.json') as json_data:
         return json.load(json_data)['icloud']
 
+
 class iCloud:
     def __init__(self):
         config = getiCloudConfig()
-        self.acc = config['accountName']
-        self.pw = config['accountPw']
-        self.api = PyiCloudService(self.acc, self.pw)
-        # self.check2fa()
+        filePath = '{currDir}/{relativeFilePath}'.format(
+            currDir=os.getcwd(),
+            relativeFilePath=config['key_file_path']
+        )
 
-    def check2fa(self):
-        if self.api.requires_2sa:
-            import click
-            print "Two-step authentication required. Your trusted devices are:"
+        self.baseUrl = 'https://api.apple-cloudkit.com/database'
+        self.version = 1
+        self.container = 'iCloud.Magtastic.SmartMirror'
+        self.environment = 'development'
 
-            devices = self.api.trusted_devices
-            for i, device in enumerate(devices):
-                print "  %s: %s" % (i, device.get('deviceName',
-                    "SMS to %s" % device.get('phoneNumber')))
-                device = click.prompt('Which device would you like to use?', default=0)
-                device = devices[device]
-                if not self.api.send_verification_code(device):
-                    print "Failed to send verification code"
-                    sys.exit(1)
+        print(filePath)
+        self.auth = CloudKitAuth(
+            key_id=config['key_id'],
+            key_file_name=filePath
+        )
 
-                code = click.prompt('Please enter validation code')
+        self.getSomething()
 
-                if not self.api.validate_verification_code(device, code):
-                    print "Failed to verify verification code"
-                    sys.exit(1)
+    def getUrl(self, subPath):
+        return '{baseUrl}/{version}/{container}/{environment}/{subPath}'.format(
+            baseUrl=self.baseUrl,
+            version=self.version,
+            container=self.container,
+            environment=self.environment,
+            subPath=subPath
+        )
 
-
+    def getSomething(self):
+        url = self.getUrl('public/users/caller')
+        r = requests.get(
+            url,
+            auth=self.auth
+        )
+        print(r.status_code)
+        print(r.json())

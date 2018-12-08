@@ -1,7 +1,7 @@
-from pyicloud import PyiCloudService
 from iCloudManager import iCloud
 import Tkinter
 from motionSensor import MotionSensor
+
 
 class App:
     def __init__(self):
@@ -46,4 +46,3 @@ class App:
 
 app = App()
 app.start()
-
